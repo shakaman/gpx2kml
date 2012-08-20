@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'gpx2kml'
+require 'optparse'
+
+options = { }
+OptionParser.new do |opts|
+  opts.banner = "Usage: gpx2kml [options]"
+
+  opts.on("-i", "--gpx FILE", "Input gpx source") do |v|
+    options[:gpx] = v
+  end
+  opts.on("-o", "--kml FILE", "Save output to kml") do |v|
+    options[:kml] = v
+  end
+end.parse!
+
+unless options[:gpx]
+  puts "Input GPX file needed"
+  @fail = true
+end
+unless options[:kml]
+  puts "Output KML file needed"
+  @fail = true
+end
+
+unless @fail
+  g = Gpx2kml.new
+  g.add_file(options[:gpx])
+
+  g.save(options[:kml])
+end
+
