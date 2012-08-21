@@ -3,6 +3,7 @@ $:.unshift(File.dirname(__FILE__))
 
 require 'rubygems'
 require 'nokogiri'
+require 'douglas_peucker'
 
 class Gpx2kml
 
@@ -25,7 +26,12 @@ class Gpx2kml
   end
 
   # Build kml
-  def build_kml
+  def build_kml(epsylon)
+    if epsylon.nil?
+      epsylon = 30e-5
+    end
+    epsylon = epsylon.to_f
+
     @styles = build_styles()
 
     @kml = Nokogiri::XML::Builder.new(:encoding => 'UTF-8') do |xml|
@@ -73,7 +79,7 @@ class Gpx2kml
                   xml.extrude true
                   xml.tessellate true
                   xml.altitudeMode "clampToGround"
-                  xml.coordinates format_track(detail[:coords])
+                  xml.coordinates format_track(detail[:coords], epsylon)
                 end
               end
               i += 1
@@ -99,9 +105,6 @@ class Gpx2kml
     gpx.remove_namespaces!
     error_count = 0
 
-    lat = 0.0
-    lon = 0.0
-
     trackpoints = gpx.xpath('//gpx/trk/trkseg/trkpt')
     trackpoints.each do |wpt|
       w = {
@@ -110,9 +113,6 @@ class Gpx2kml
         :time => self.class.proc_time(wpt.xpath('time').children.first.to_s),
         :alt => wpt.xpath('ele').children.first.to_s.to_f
       }
-
-      lat += w[:lat]
-      lon += w[:lon]
 
       if self.class.coord_valid?(w[:lat], w[:lon], w[:alt], w[:time])
         coords << w
@@ -129,10 +129,20 @@ class Gpx2kml
 
 
   # format coords to track format
-  def format_track(coords)
-    track = ""
+  def format_track(coords, epsylon)
+    points = Array.new
 
     coords.each do |c|
+      points << {lon: c[:lon], lat: c[:lat], alt: c[:alt]}
+    end
+    douglas_peucker = DouglasPeucker.new(points, epsylon)
+    points_list = douglas_peucker.instance_variable_get(:@points)
+
+    p points.count
+    p points_list.count
+
+    track = ""
+    points_list.each do |c|
       track << "#{c[:lon]}, #{c[:lat]}, #{c[:alt]}, \n"
     end
 

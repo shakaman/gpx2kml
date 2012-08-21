@@ -11,8 +11,13 @@ OptionParser.new do |opts|
   opts.on("-i", "--gpx FILE", "Input gpx sources, separate by ,") do |v|
     options[:gpx] = v
   end
+
   opts.on("-o", "--kml FILE", "Save output to kml") do |v|
     options[:kml] = v
+  end
+
+  opts.on("-e", "--epsylon FLOAT", "Epsylon to Douglas Peucker algorythm") do |v|
+    options[:epsylon] = v
   end
 end.parse!
 
@@ -26,9 +31,10 @@ unless options[:kml]
 end
 
 unless @fail
+  p options
   g = Gpx2kml.new
   g.add_files(options[:gpx])
-  g.build_kml()
+  g.build_kml(options[:epsylon])
   g.save(options[:kml])
 end
 
