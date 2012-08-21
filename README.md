@@ -19,6 +19,8 @@ How to use it
 
   gpx2kml -i examples/test.gpx,examples/test-2.gpx -i test.kml -e 30e-5
 
+3. [See result on google map](http://display-kml.appspot.com/)
+
 
 Copyright
 ---------
