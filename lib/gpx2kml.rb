@@ -12,45 +12,132 @@ class Gpx2kml
 
   attr :coords
 
-  def add_file(path)
-    p 'add_file'
-    p "path : #{path}"
+  # Add gpx files
+  def add_files(files)
+    @files = files.split(',')
+  end
+
+  # Save to kml file
+  def save(filename)
+    f = File.open(filename, 'w')
+    f.puts @kml.to_xml
+    f.close
+  end
+
+  # Build kml
+  def build_kml
+    @styles = build_styles()
+
+    @kml = Nokogiri::XML::Builder.new(:encoding => 'UTF-8') do |xml|
+      xml.kml('xmlns' => 'http://www.opengis.net/kml/2.2',
+              'xmlns:gx' => 'http://www.google.com/kml/ext/2.2',
+              'xmlns:kml' => 'http://www.opengis.net/kml/2.2',
+              'xmlns:atom' => 'http://www.w3.org/2005/Atom') do
+
+        xml.Document do
+          xml.name "Converted from GPX file"
+          xml.description {
+            xml.cdata "<p>Converted using <b><a href='http://github.com/shakaman/gpx2kml' title='Go to gpx2kml on github'>Github</a></b></p>"
+          }
+          xml.visibility 1
+          xml.open 1
+
+          # Styles
+          @styles.each do |s|
+            xml.Style(:id => s[:id]) {
+              xml.LineStyle {
+                xml.color_    s[:LineStyle][:color]
+                xml.width_    s[:LineStyle][:width]
+              }
+            }
+          end
+
+          # Tracks
+          xml.Folder do
+            xml.name "Tracks"
+            xml.description "A list of tracks"
+            xml.visibility 1
+            xml.open 0
+
+            i = 0
+            @files.each do |gpx|
+              detail = read_gpx(gpx)
+
+              xml.Placemark do
+                xml.visibility 0
+                xml.open 0
+                xml.styleUrl "##{@styles[i][:id]}"
+                xml.name detail[:title]
+                xml.description detail[:desc]
+                xml.LineString do
+                  xml.extrude true
+                  xml.tessellate true
+                  xml.altitudeMode "clampToGround"
+                  xml.coordinates format_track(detail[:coords])
+                end
+              end
+              i += 1
+            end
+          end
+        end
+      end
+    end
+  end
+
+  # Create track style
+  def build_styles
+    styles = Array.new
+    styles << { id: 'red',   LineStyle: { color: 'C81400FF', width: 4 } }
+    styles << { id: 'blue',  LineStyle: { color: 'C8FF7800', width: 4 } }
+  end
+
+  def read_gpx(path)
+    coords = Array.new
+
     f = File.new(path)
-    doc = Nokogiri::XML(f)
-    doc.remove_namespaces!
-    a = Array.new
+    gpx = Nokogiri::XML(f)
+    gpx.remove_namespaces!
     error_count = 0
 
-    trackpoints = doc.xpath('//gpx/trk/trkseg/trkpt')
+    lat = 0.0
+    lon = 0.0
+
+    trackpoints = gpx.xpath('//gpx/trk/trkseg/trkpt')
     trackpoints.each do |wpt|
       w = {
         :lat => wpt.xpath('@lat').to_s.to_f,
         :lon => wpt.xpath('@lon').to_s.to_f,
-        :time => proc_time(wpt.xpath('time').children.first.to_s),
+        :time => self.class.proc_time(wpt.xpath('time').children.first.to_s),
         :alt => wpt.xpath('ele').children.first.to_s.to_f
       }
 
+      lat += w[:lat]
+      lon += w[:lon]
+
       if self.class.coord_valid?(w[:lat], w[:lon], w[:alt], w[:time])
-        a << w
+        coords << w
       else
         error_count += 1
       end
     end
+
     f.close
+    coords = coords.sort { |b, c| b[:time] <=> c[:time] }
 
-    @coords += a
-    @coords = @coords.sort { |b, c| b[:time] <=> c[:time] }
-    p @coords
+    {title: gpx.xpath('//gpx/trk/name').text, desc: gpx.xpath('//gpx/trk/desc').text, coords: coords}
   end
 
-  def save(filename)
-    p 'save_file'
-    p filename
-    #f = File.open(filename, 'w')
-    #f.puts xml
-    #f.close
-  end
 
+  # format coords to track format
+  def format_track(coords)
+    track = ""
+
+    coords.each do |c|
+      track << "#{c[:lon]}, #{c[:lat]}, #{c[:alt]}, \n"
+    end
+
+    return track
+  end
 
 
   # Only import valid coords
@@ -64,9 +151,4 @@ class Gpx2kml
       return Time.gm($1.to_i, $2.to_i, $3.to_i, $4.to_i, $5.to_i, $6.to_i).localtime
     end
   end
-
-  def proc_time(ts)
-    self.class.proc_time(ts)
-  end
-
 end

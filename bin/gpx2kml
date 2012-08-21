@@ -8,7 +8,7 @@ options = { }
 OptionParser.new do |opts|
   opts.banner = "Usage: gpx2kml [options]"
 
-  opts.on("-i", "--gpx FILE", "Input gpx source") do |v|
+  opts.on("-i", "--gpx FILE", "Input gpx sources, separate by ,") do |v|
     options[:gpx] = v
   end
   opts.on("-o", "--kml FILE", "Save output to kml") do |v|
@@ -27,8 +27,8 @@ end
 
 unless @fail
   g = Gpx2kml.new
-  g.add_file(options[:gpx])
-
+  g.add_files(options[:gpx])
+  g.build_kml()
   g.save(options[:kml])
 end
 
