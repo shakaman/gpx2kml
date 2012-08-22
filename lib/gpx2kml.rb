@@ -135,11 +135,7 @@ class Gpx2kml
     coords.each do |c|
       points << {lon: c[:lon], lat: c[:lat], alt: c[:alt]}
     end
-    douglas_peucker = DouglasPeucker.new(points, epsylon)
-    points_list = douglas_peucker.instance_variable_get(:@points)
-
-    p points.count
-    p points_list.count
+    points_list = DouglasPeucker.new(epsylon).simplify_line(points)
 
     track = ""
     points_list.each do |c|

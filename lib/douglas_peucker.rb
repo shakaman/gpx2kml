@@ -3,11 +3,8 @@ $:.unshift(File.dirname(__FILE__))
 
 class DouglasPeucker
 
-  def initialize(points_list, epsilon=10e-8)
-    @points_list  = points_list
+  def initialize(epsilon=10e-8)
     @epsilon      = epsilon
-
-    @points = simplify_line(@points_list)
   end
 
   def simplify_line(points)

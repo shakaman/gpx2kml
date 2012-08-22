@@ -31,7 +31,6 @@ unless options[:kml]
 end
 
 unless @fail
-  p options
   g = Gpx2kml.new
   g.add_files(options[:gpx])
   g.build_kml(options[:epsylon])

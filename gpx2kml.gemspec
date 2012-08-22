@@ -4,7 +4,7 @@ $:.unshift File.expand_path('../lib', __FILE__)
 
 Gem::Specification.new do |s|
   s.name         = "gpx2kml"
-  s.version      = "0.0.0"
+  s.version      = "0.0.1"
   s.authors      = ["Maxim Bénadon"]
   s.email        = ["mbenadon@shakaman.com"]
   s.homepage     = "https://github.com/shakaman/gpx2kml"
@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
 
   s.executables  = ["gpx2kml"]
   s.files        = `git ls-files README.md LICENSE lib`.split("\n")
-  #s.platform     = Gem::Platform::RUBY
+  s.platform     = Gem::Platform::RUBY
   s.require_path = ['lib']
 
   s.add_dependency "nokogiri"
