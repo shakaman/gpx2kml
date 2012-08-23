@@ -19,6 +19,10 @@ OptionParser.new do |opts|
   opts.on("-e", "--epsylon FLOAT", "Epsylon to Douglas Peucker algorythm") do |v|
     options[:epsylon] = v
   end
+
+  opts.on("-p", "--pictures FOLDER", "Pictures folder") do |v|
+    options[:pictures] = v
+  end
 end.parse!
 
 unless options[:gpx]
@@ -31,8 +35,10 @@ unless options[:kml]
 end
 
 unless @fail
+  p options
   g = Gpx2kml.new
   g.add_files(options[:gpx])
+  g.add_pictures(options[:pictures])
   g.build_kml(options[:epsylon])
   g.save(options[:kml])
 end

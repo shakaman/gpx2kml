@@ -4,11 +4,13 @@ $:.unshift(File.dirname(__FILE__))
 require 'rubygems'
 require 'nokogiri'
 require 'douglas_peucker'
+require 'mini_exiftool'
 
 class Gpx2kml
 
   def initialize
-    @coords = Array.new
+    @coords   = Array.new
+    @pictures = Array.new
   end
 
   attr :coords
@@ -16,6 +18,12 @@ class Gpx2kml
   # Add gpx files
   def add_files(files)
     @files = files.split(',')
+  end
+
+  def add_pictures(path)
+    Dir.glob("#{path}/*.{jpg,png}", File::FNM_CASEFOLD).each do |f|
+      @pictures << f
+    end
   end
 
   # Save to kml file
@@ -84,6 +92,20 @@ class Gpx2kml
               end
               i += 1
             end
+
+            @pictures.each do |picture|
+              exif = get_exif_picture(picture)
+
+              unless exif[:lon].nil? && exif[:lat].nil?
+                xml.Placemark do
+                  xml.name exif[:name]
+                  xml.description exif[:camera]
+                  xml.Point do
+                    xml.coordinates "#{exif[:lon]},#{exif[:lat]}"
+                  end
+                end
+              end
+            end
           end
         end
       end
@@ -93,8 +115,13 @@ class Gpx2kml
   # Create track style
   def build_styles
     styles = Array.new
-    styles << { id: 'red',   LineStyle: { color: 'C81400FF', width: 4 } }
-    styles << { id: 'blue',  LineStyle: { color: 'C8FF7800', width: 4 } }
+    styles << { id: 'red',    LineStyle: { color: 'C81400FF', width: 4 } }
+    styles << { id: 'blue',   LineStyle: { color: 'C8FF7800', width: 4 } }
+    styles << { id: 'pink',   LineStyle: { color: '96F0FF14', width: 4 } }
+    styles << { id: 'green',  LineStyle: { color: 'C878FF00', width: 4 } }
+    styles << { id: 'orange', LineStyle: { color: 'C81478FF', width: 4 } }
+    styles << { id: 'dark_green', LineStyle: { color: '96008C14', width: 4 } }
+    styles << { id: 'pink2', LineStyle: { color: 'C8A078F0', width: 4 } }
   end
 
   def read_gpx(path)
@@ -145,6 +172,38 @@ class Gpx2kml
     return track
   end
 
+
+  def get_exif_picture(picture)
+    picture = MiniExiftool.new picture
+
+    lat_dms   = picture['GPSLatitude']
+    long_dms  = picture['GPSLongitude']
+
+    latitude  = dms_to_decimal(lat_dms)
+    longitude = dms_to_decimal(long_dms)
+
+    latitude  *= -1   if picture['GPSLatitudeRef'] == 'S'
+    longitude *= -1   if picture['GPSLongitudeRef'] == 'West'
+
+    {
+      lon:        longitude,
+      lat:        latitude,
+      name:       picture['filename'],
+      camera:     picture['model'],
+      date_time:  picture['DateTimeOriginal']
+    }
+  end
+
+  def dms_to_decimal(dms)
+    unless dms.nil?
+      dms = dms.match(/(\d+) (?:deg|) (\d+)' (\d+\.\d+)/)
+      degree = dms[1].to_f
+      minute = dms[2].to_f/60
+      second = dms[3].to_f/3600
+
+      return degree + minute + second
+    end
+  end
 
   # Only import valid coords
   def self.coord_valid?(lat, lon, elevation, time)
