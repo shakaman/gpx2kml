@@ -110,7 +110,10 @@ class Gpx2kml
         end
       end
     end
-    @kml
+  end
+
+  def get_kml
+    @kml.to_xml
   end
 
   # Create track style
