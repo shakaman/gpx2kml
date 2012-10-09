@@ -110,6 +110,7 @@ class Gpx2kml
         end
       end
     end
+    @kml
   end
 
   # Create track style
